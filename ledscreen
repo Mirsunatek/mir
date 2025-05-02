@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>LED Info</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 384px;
+      height: 64px;
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+    .info {
+      font-size: 16px;
+      text-align: center;
+      line-height: 64px;
+      transition: opacity 0.5s ease-in-out;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="info" id="display">Загрузка данных...</div>
+
+  <script>
+    const display = document.getElementById("display");
+    let messages = ["Загрузка данных..."];
+    let index = 0;
+
+    async function fetchWeather() {
+      try {
+        const response = await fetch("https://wttr.in/Shymkent?format=j1");
+        const data = await response.json();
+        const temp = data.current_condition[0].temp_C;
+        const desc = data.current_condition[0].weatherDesc[0].value;
+        return `Шымкент: ${temp}°C, ${desc}`;
+      } catch {
+        return "Погода недоступна";
+      }
+    }
+
+    async function fetchExchangeRates() {
+      try {
+        const response = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=KZT,EUR,CNY,RUB");
+        const data = await response.json();
+        return {
+          "USD": data.rates.KZT.toFixed(2),
+          "EUR": (data.rates.KZT / data.rates.EUR).toFixed(2),
+          "CNY": (data.rates.KZT / data.rates.CNY).toFixed(2),
+          "RUB": (data.rates.KZT / data.rates.RUB).toFixed(2)
+        };
+      } catch {
+        return {
+          "USD": "н/д",
+          "EUR": "н/д",
+          "CNY": "н/д",
+          "RUB": "н/д"
+        };
+      }
+    }
+
+    async function updateData() {
+      const weatherText = await fetchWeather();
+      const rates = await fetchExchangeRates();
+      messages = [
+        weatherText,
+        `USD: ${rates.USD} ₸`,
+        `EUR: ${rates.EUR} ₸`,
+        `CNY: ${rates.CNY} ₸`,
+        `RUB: ${rates.RUB} ₸`
+      ];
+    }
+
+    function updateDisplay() {
+      display.style.opacity = 0;
+      setTimeout(() => {
+        display.innerText = messages[index];
+        display.style.opacity = 1;
+        index = (index + 1) % messages.length;
+      }, 500);
+    }
+
+    updateData();
+    setInterval(updateData, 10 * 60 * 1000);
+    updateDisplay();
+    setInterval(updateDisplay, 5000);
+  </script>
+</body>
+</html>
